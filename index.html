@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ОПП — Игровой тест | Индустрия 4.0</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #58cc02;
+      --green-dark: #46a302;
+      --blue: #1cb0f6;
+      --red: #ff4b4b;
+      --orange: #ff9600;
+      --purple: #ce82ff;
+      --bg: #f7f7f7;
+      --card: #ffffff;
+      --text: #3c3c3c;
+      --muted: #777;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    /* Anti-cheat overlay */
+    #cheat-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 75, 75, 0.95);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+      padding: 2rem;
+    }
+    #cheat-overlay h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+    #cheat-overlay p { font-size: 1.2rem; max-width: 500px; }
+    /* Screens */
+    .screen {
+      display: none;
+      min-height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      animation: fadeIn 0.4s ease;
+    }
+    .screen.active { display: flex; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Start screen */
+    .logo {
+      font-size: 3.5rem;
+      margin-bottom: 0.5rem;
+    }
+    h1.title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--green-dark);
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 2rem;
+      text-align: center;
+      max-width: 420px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 440px;
+    }
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      font-size: 0.95rem;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      border: 2px solid #e5e5e5;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-family: inherit;
+      margin-bottom: 1.2rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input[type="text"]:focus { border-color: var(--blue); }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.1s, filter 0.15s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-green {
+      background: var(--green);
+      color: white;
+      box-shadow: 0 4px 0 var(--green-dark);
+    }
+    .btn-green:hover { filter: brightness(1.05); }
+    .btn-blue {
+      background: var(--blue);
+      color: white;
+      box-shadow: 0 4px 0 #1899d6;
+    }
+    .btn-outline {
+      background: white;
+      color: var(--blue);
+      border: 2px solid var(--blue);
+      margin-top: 0.8rem;
+    }
+    /* Quiz header */
+    .quiz-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 0.8rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      z-index: 100;
+    }
+    .progress-wrap {
+      flex: 1;
+      height: 12px;
+      background: #e5e5e5;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--green);
+      border-radius: 99px;
+      transition: width 0.35s ease;
+      width: 0%;
+    }
+    .hearts {
+      display: flex;
+      gap: 4px;
+      font-size: 1.3rem;
+    }
+    .heart.lost { opacity: 0.25; filter: grayscale(1); }
+    .score-badge {
+      background: #eef9ff;
+      color: var(--blue);
+      font-weight: 800;
+      padding: 0.3rem 0.7rem;
+      border-radius: 99px;
+      font-size: 0.9rem;
+    }
+    /* Question area */
+    #quiz-screen {
+      padding-top: 5rem;
+      justify-content: flex-start;
+    }
+    .question-card {
+      background: white;
+      border-radius: 20px;
+      padding: 1.8rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      width: 100%;
+      max-width: 520px;
+      margin-top: 1rem;
+    }
+    .q-type {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.6rem;
+    }
+    .q-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 1.5rem;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+    .option {
+      padding: 1rem 1.2rem;
+      border: 2px solid #e5e5e5;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.15s;
+      background: white;
+      text-align: left;
+    }
+    .option:hover:not(.disabled) {
+      border-color: var(--blue);
+      background: #f0f9ff;
+    }
+    .option.selected {
+      border-color: var(--blue);
+      background: #e8f6fd;
+    }
+    .option.correct {
+      border-color: var(--green);
+      background: #e8fce0;
+      color: var(--green-dark);
+    }
+    .option.wrong {
+      border-color: var(--red);
+      background: #ffe8e8;
+      color: #c00;
+    }
+    .option.disabled { pointer-events: none; opacity: 0.7; }
+    .feedback {
+      margin-top: 1.2rem;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      font-weight: 700;
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+    .feedback.ok {
+      background: #e8fce0;
+      color: var(--green-dark);
+      display: block;
+    }
+    .feedback.bad {
+      background: #ffe8e8;
+      color: #c00;
+      display: block;
+    }
+    .btn-check {
+      margin-top: 1.2rem;
+      display: none;
+    }
+    .btn-check.visible { display: block; }
+    /* Result screen */
+    .result-emoji { font-size: 4.5rem; margin-bottom: 0.5rem; }
+    .result-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.3rem; }
+    .result-score {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--green-dark);
+      margin: 0.5rem 0;
+    }
+    .result-details {
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .cheat-flag {
+      background: #ffe8e8;
+      color: #c00;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .xp-bar {
+      background: #f0f0f0;
+      border-radius: 99px;
+      height: 10px;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+    .xp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+      border-radius: 99px;
+      transition: width 1s ease;
+    }
+    /* Timer */
+    .timer {
+      font-weight: 800;
+      color: var(--orange);
+      font-size: 0.95rem;
+      min-width: 48px;
+      text-align: center;
+    }
+    .timer.urgent { color: var(--red); animation: pulse 0.6s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    /* Confetti canvas */
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: #aaa;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="cheat-overlay">
+    <h1>⚠️ Списывание обнаружено!</h1>
+    <p>Вы попытались покинуть тест, переключить вкладку или свернуть окно.<br>
+    Результат аннулирован. Попытка зафиксирована как <strong>СПИСЫВАНИЕ</strong>.</p>
+    <p style="margin-top:1.5rem;font-size:1rem;">Закройте это окно и сообщите преподавателю.</p>
+  </div>
+
+  <!-- START -->
+  <div id="start-screen" class="screen active">
+    <div class="logo">🤖</div>
+    <h1 class="title">Опытное производство поддонов</h1>
+    <p class="subtitle">Игровой тест по сокращённым модулям СК<br>Индустрия 4.0 • Робототехника • Экономика • Цифра</p>
+    <div class="card">
+      <label for="student-name">Ваше ФИО</label>
+      <input type="text" id="student-name" placeholder="Иванов Иван Иванович" autocomplete="off" maxlength="80">
+      <label for="student-group">Группа / Курс</label>
+      <input type="text" id="student-group" placeholder="например: ИС-21" autocomplete="off" maxlength="30">
+      <button class="btn btn-green" id="btn-start">Начать тест</button>
+      <p style="margin-top:1rem;font-size:0.85rem;color:var(--muted);text-align:center;">
+        ⏱ ~15–20 минут • 20 вопросов • 3 жизни<br>
+        Переключение вкладок = списывание
+      </p>
+    </div>
+    <footer>Модуль 4 • ОПП</footer>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz-screen" class="screen">
+    <div class="quiz-header">
+      <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
+      <div class="timer" id="timer">01:00</div>
+      <div class="hearts" id="hearts">❤️❤️❤️</div>
+      <div class="score-badge" id="score-display">0 XP</div>
+    </div>
+    <div class="question-card" id="q-card">
+      <div class="q-type" id="q-type">ВОПРОС</div>
+      <div class="q-text" id="q-text"></div>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn btn-green btn-check" id="btn-check">Проверить</button>
+      <button class="btn btn-blue btn-check" id="btn-next" style="display:none;">Далее →</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result-screen" class="screen">
+    <div class="result-emoji" id="result-emoji">🎉</div>
+    <div class="result-title" id="result-title">Отлично!</div>
+    <div class="result-score" id="result-score">0 / 20</div>
+    <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    <p class="result-details" id="result-details"></p>
+    <div id="cheat-banner" class="cheat-flag" style="display:none;">
+      ⚠️ Зафиксировано списывание. Результат аннулирован.
+    </div>
+    <div class="card" style="max-width:400px;">
+      <button class="btn btn-green" id="btn-download">📥 Скачать результат (Excel)</button>
+      <button class="btn btn-outline" id="btn-restart">Пройти ещё раз</button>
+      <p style="margin-top:1rem;font-size:0.8rem;color:var(--muted);text-align:center;">
+        Файл Excel сохраните в папку Синолоджи Драйв<br>
+        (результаты/ОПП_тесты)
+      </p>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
