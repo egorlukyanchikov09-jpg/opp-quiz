@@ -25,47 +25,104 @@
     return normalizeName(name) === ADMIN_NAME;
   }
 
-  // ===== Voice: "вы списали" =====
+  let sirenCtx = null;
+  let sirenNodes = [];
+
+  function playSiren() {
+    try {
+      stopSirenAudio();
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      sirenCtx = ctx;
+      const master = ctx.createGain();
+      master.gain.value = 1.0;
+      master.connect(ctx.destination);
+      const makeTone = (freq, type) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        g.gain.value = 0.45;
+        osc.connect(g);
+        g.connect(master);
+        osc.start();
+        sirenNodes.push(osc, g);
+        return osc;
+      };
+      const o1 = makeTone(780, "sawtooth");
+      const o2 = makeTone(980, "sawtooth");
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.frequency.value = 2.5;
+      lfoGain.gain.value = 200;
+      lfo.connect(lfoGain);
+      lfoGain.connect(o1.frequency);
+      lfoGain.connect(o2.frequency);
+      lfo.start();
+      sirenNodes.push(lfo, lfoGain);
+      setTimeout(stopSirenAudio, 7000);
+    } catch (e) {
+      console.warn("Siren failed", e);
+    }
+  }
+
+  function stopSirenAudio() {
+    try {
+      sirenNodes.forEach((n) => {
+        try { n.stop?.(); } catch (_) {}
+        try { n.disconnect?.(); } catch (_) {}
+      });
+      sirenNodes = [];
+      if (sirenCtx) {
+        sirenCtx.close?.();
+        sirenCtx = null;
+      }
+    } catch (_) {}
+  }
+
   function speakCheat() {
     try {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance("Вы списали");
-      utter.lang = "ru-RU";
-      utter.volume = 1.0;
-      utter.rate = 0.9;
-      utter.pitch = 1.0;
+      const text = "Вы списали. Обратитесь к преподавателю";
       const voices = window.speechSynthesis.getVoices();
-      const ru = voices.find((v) => v.lang.startsWith("ru"));
-      if (ru) utter.voice = ru;
-      window.speechSynthesis.speak(utter);
-      setTimeout(() => {
-        const u2 = new SpeechSynthesisUtterance("Вы списали");
-        u2.lang = "ru-RU";
-        u2.volume = 1.0;
-        u2.rate = 0.9;
-        if (ru) u2.voice = ru;
-        window.speechSynthesis.speak(u2);
-      }, 1600);
+      const ru = voices.find((v) => v.lang.startsWith("ru")) || null;
+      const speak = (delay) => {
+        setTimeout(() => {
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = "ru-RU";
+          utter.volume = 1.0;
+          utter.rate = 0.85;
+          utter.pitch = 0.9;
+          if (ru) utter.voice = ru;
+          window.speechSynthesis.speak(utter);
+        }, delay);
+      };
+      speak(400);
+      speak(4500);
     } catch (e) {
       console.warn("Speech failed", e);
     }
   }
 
+  function playCheatAlert() {
+    playSiren();
+    speakCheat();
+  }
+
   function stopSiren() {
+    stopSirenAudio();
     try {
       window.speechSynthesis?.cancel();
     } catch (_) {}
   }
 
-  // ===== Anti-cheat =====
   function markCheat() {
     if (state.cheated) return;
     state.cheated = true;
     clearInterval(state.timerId);
     cheatOverlay.style.display = "flex";
-    speakCheat();
-    setTimeout(() => finishQuiz(true), 4000);
+    playCheatAlert();
+    setTimeout(() => finishQuiz(true), 6500);
   }
 
   document.addEventListener("visibilitychange", () => {
