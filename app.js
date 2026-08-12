@@ -265,6 +265,31 @@
     renderQuestion();
   }
 
+  function setQuestionScene(module) {
+    const scene = $("q-scene");
+    if (!scene) return;
+    const sets = {
+      1: {
+        icons: ["🤖", "🦾", "📦", "⚙️", "🏭", "🔧"],
+        extra: `<div class="gear g1"></div><div class="gear g2"></div><div class="pulse-ring"></div>`
+      },
+      3: {
+        icons: ["📊", "💰", "📈", "💵", "🏦", "📉"],
+        extra: `<div class="bar-chart"><span></span><span></span><span></span><span></span><span></span></div><div class="pulse-ring"></div>`
+      },
+      4: {
+        icons: ["💻", "🖥️", "📡", "🔌", "🛡️", "🌐"],
+        extra: `<div class="circuit"></div><div class="scan-line"></div><div class="pulse-ring"></div>`
+      }
+    };
+    const cfg = sets[module] || sets[1];
+    const rot = state.current % cfg.icons.length;
+    const icons = cfg.icons.slice(rot).concat(cfg.icons.slice(0, rot));
+    scene.innerHTML =
+      icons.map((ic) => `<span class="float-item">${ic}</span>`).join("") +
+      cfg.extra;
+  }
+
   function renderQuestion() {
     if (state.current >= state.questions.length) {
       finishQuiz(false);
@@ -277,6 +302,7 @@
     $("mod-badge").textContent = "М" + q.module;
     $("q-type").textContent = `Вопрос ${state.current + 1} из ${state.questions.length} · Модуль ${q.module}`;
     $("q-text").textContent = q.text;
+    setQuestionScene(q.module);
 
     const optsEl = $("options");
     optsEl.innerHTML = "";
@@ -290,6 +316,7 @@
       div.className = "option";
       div.textContent = opt;
       div.dataset.idx = i;
+      div.style.animation = `textPop 0.35s ${0.05 * i}s both cubic-bezier(0.22,1,0.36,1)`;
       div.onclick = () => selectOption(i);
       optsEl.appendChild(div);
     });
