@@ -1,397 +1,174 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ОПП — Игровой тест | Индустрия 4.0</title>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --green: #58cc02;
-      --green-dark: #46a302;
-      --blue: #1cb0f6;
-      --red: #ff4b4b;
-      --orange: #ff9600;
-      --purple: #ce82ff;
-      --bg: #f7f7f7;
-      --card: #ffffff;
-      --text: #3c3c3c;
-      --muted: #777;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Nunito', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    /* Anti-cheat overlay */
-    #cheat-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(255, 75, 75, 0.95);
-      z-index: 9999;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      text-align: center;
-      padding: 2rem;
-    }
-    #cheat-overlay h1 { font-size: 2.5rem; margin-bottom: 1rem; }
-    #cheat-overlay p { font-size: 1.2rem; max-width: 500px; }
-    /* Screens */
-    .screen {
-      display: none;
-      min-height: 100vh;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-      animation: fadeIn 0.4s ease;
-    }
-    .screen.active { display: flex; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    /* Start screen */
-    .logo {
-      font-size: 3.5rem;
-      margin-bottom: 0.5rem;
-    }
-    h1.title {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: var(--green-dark);
-      margin-bottom: 0.5rem;
-      text-align: center;
-    }
-    .subtitle {
-      color: var(--muted);
-      margin-bottom: 2rem;
-      text-align: center;
-      max-width: 420px;
-    }
-    .card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 2rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      width: 100%;
-      max-width: 440px;
-    }
-    label {
-      display: block;
-      font-weight: 700;
-      margin-bottom: 0.4rem;
-      font-size: 0.95rem;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 0.9rem 1rem;
-      border: 2px solid #e5e5e5;
-      border-radius: 12px;
-      font-size: 1.05rem;
-      font-family: inherit;
-      margin-bottom: 1.2rem;
-      outline: none;
-      transition: border 0.2s;
-    }
-    input[type="text"]:focus { border-color: var(--blue); }
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 1rem;
-      border: none;
-      border-radius: 16px;
-      font-size: 1.1rem;
-      font-weight: 800;
-      font-family: inherit;
-      cursor: pointer;
-      transition: transform 0.1s, filter 0.15s;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .btn:active { transform: scale(0.97); }
-    .btn-green {
-      background: var(--green);
-      color: white;
-      box-shadow: 0 4px 0 var(--green-dark);
-    }
-    .btn-green:hover { filter: brightness(1.05); }
-    .btn-blue {
-      background: var(--blue);
-      color: white;
-      box-shadow: 0 4px 0 #1899d6;
-    }
-    .btn-outline {
-      background: white;
-      color: var(--blue);
-      border: 2px solid var(--blue);
-      margin-top: 0.8rem;
-    }
-    /* Quiz header */
-    .quiz-header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      padding: 0.8rem 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      z-index: 100;
-    }
-    .progress-wrap {
-      flex: 1;
-      height: 12px;
-      background: #e5e5e5;
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .progress-bar {
-      height: 100%;
-      background: var(--green);
-      border-radius: 99px;
-      transition: width 0.35s ease;
-      width: 0%;
-    }
-    .hearts {
-      display: flex;
-      gap: 4px;
-      font-size: 1.3rem;
-    }
-    .heart.lost { opacity: 0.25; filter: grayscale(1); }
-    .score-badge {
-      background: #eef9ff;
-      color: var(--blue);
-      font-weight: 800;
-      padding: 0.3rem 0.7rem;
-      border-radius: 99px;
-      font-size: 0.9rem;
-    }
-    /* Question area */
-    #quiz-screen {
-      padding-top: 5rem;
-      justify-content: flex-start;
-    }
-    .question-card {
-      background: white;
-      border-radius: 20px;
-      padding: 1.8rem;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-      width: 100%;
-      max-width: 520px;
-      margin-top: 1rem;
-    }
-    .q-type {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 0.6rem;
-    }
-    .q-text {
-      font-size: 1.25rem;
-      font-weight: 700;
-      line-height: 1.4;
-      margin-bottom: 1.5rem;
-    }
-    .options {
-      display: flex;
-      flex-direction: column;
-      gap: 0.7rem;
-    }
-    .option {
-      padding: 1rem 1.2rem;
-      border: 2px solid #e5e5e5;
-      border-radius: 14px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 1rem;
-      transition: all 0.15s;
-      background: white;
-      text-align: left;
-    }
-    .option:hover:not(.disabled) {
-      border-color: var(--blue);
-      background: #f0f9ff;
-    }
-    .option.selected {
-      border-color: var(--blue);
-      background: #e8f6fd;
-    }
-    .option.correct {
-      border-color: var(--green);
-      background: #e8fce0;
-      color: var(--green-dark);
-    }
-    .option.wrong {
-      border-color: var(--red);
-      background: #ffe8e8;
-      color: #c00;
-    }
-    .option.disabled { pointer-events: none; opacity: 0.7; }
-    .feedback {
-      margin-top: 1.2rem;
-      padding: 0.9rem 1rem;
-      border-radius: 12px;
-      font-weight: 700;
-      display: none;
-      animation: fadeIn 0.3s;
-    }
-    .feedback.ok {
-      background: #e8fce0;
-      color: var(--green-dark);
-      display: block;
-    }
-    .feedback.bad {
-      background: #ffe8e8;
-      color: #c00;
-      display: block;
-    }
-    .btn-check {
-      margin-top: 1.2rem;
-      display: none;
-    }
-    .btn-check.visible { display: block; }
-    /* Result screen */
-    .result-emoji { font-size: 4.5rem; margin-bottom: 0.5rem; }
-    .result-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.3rem; }
-    .result-score {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: var(--green-dark);
-      margin: 0.5rem 0;
-    }
-    .result-details {
-      color: var(--muted);
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
-    .cheat-flag {
-      background: #ffe8e8;
-      color: #c00;
-      padding: 0.8rem 1rem;
-      border-radius: 12px;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-    .xp-bar {
-      background: #f0f0f0;
-      border-radius: 99px;
-      height: 10px;
-      margin: 1rem 0;
-      overflow: hidden;
-    }
-    .xp-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--green), var(--blue));
-      border-radius: 99px;
-      transition: width 1s ease;
-    }
-    /* Timer */
-    .timer {
-      font-weight: 800;
-      color: var(--orange);
-      font-size: 0.95rem;
-      min-width: 48px;
-      text-align: center;
-    }
-    .timer.urgent { color: var(--red); animation: pulse 0.6s infinite; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    /* Confetti canvas */
-    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
-    footer {
-      margin-top: 2rem;
-      font-size: 0.8rem;
-      color: #aaa;
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ОПП · Алабуга · Тест по модулям</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--blue-deep:#003D7A;--blue:#0055A5;--blue-light:#E8F1FA;--blue-glow:#4DA3FF;--bg:#F0F5FA;--text:#0A1F33;--muted:#5A7A9A;--success:#00C853;--danger:#FF3D57;--card-shadow:0 8px 32px rgba(0,61,122,.12);--radius:20px}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Montserrat,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;user-select:none;-webkit-user-select:none}
+.bg-anim{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 80% 50% at 20% 40%,rgba(0,85,165,.08),transparent),linear-gradient(180deg,#F5F9FC,#E8F1FA)}
+.bg-anim::before{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(77,163,255,.15),transparent 70%);top:-100px;right:-100px;animation:floatOrb 12s ease-in-out infinite}
+@keyframes floatOrb{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,20px) scale(1.1)}}
+.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;position:relative;z-index:1}
+.screen.active{display:flex;animation:screenIn .5s cubic-bezier(.22,1,.36,1)}
+@keyframes screenIn{from{opacity:0;transform:translateY(24px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;animation:fadeSlide .7s ease both}
+.brand-logo{width:48px;height:48px;background:linear-gradient(135deg,var(--blue),var(--blue-deep));border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:1.2rem;box-shadow:0 4px 16px rgba(0,85,165,.35);animation:pulseGlow 3s ease-in-out infinite}
+@keyframes pulseGlow{0%,100%{box-shadow:0 4px 16px rgba(0,85,165,.35)}50%{box-shadow:0 4px 28px rgba(77,163,255,.5)}}
+.brand-text{font-weight:700;font-size:1.1rem;color:var(--blue-deep)}.brand-sub{font-size:.75rem;color:var(--muted);font-weight:500}
+h1.title{font-size:1.75rem;font-weight:800;color:var(--blue-deep);text-align:center;margin-bottom:.4rem;animation:fadeSlide .7s .1s ease both}
+.subtitle{color:var(--muted);text-align:center;max-width:420px;margin-bottom:1.8rem;font-size:.95rem;animation:fadeSlide .7s .15s ease both}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card{background:#fff;border-radius:var(--radius);padding:1.8rem;box-shadow:var(--card-shadow);width:100%;max-width:460px;border:1px solid rgba(0,85,165,.08);animation:cardPop .6s .2s cubic-bezier(.22,1,.36,1) both}
+@keyframes cardPop{from{opacity:0;transform:scale(.94) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+label{display:block;font-weight:600;font-size:.85rem;color:var(--blue-deep);margin-bottom:.35rem}
+input[type=text]{width:100%;padding:.85rem 1rem;border:2px solid #D0E0F0;border-radius:12px;font-size:1rem;font-family:inherit;margin-bottom:1rem;outline:none;transition:border .25s,box-shadow .25s;background:#FAFCFF}
+input[type=text]:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,85,165,.12)}
+.btn{display:block;width:100%;padding:1rem;border:none;border-radius:14px;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.4px;position:relative;overflow:hidden}
+.btn::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.25) 50%,transparent 70%);transform:translateX(-100%);transition:transform .5s}
+.btn:hover::after{transform:translateX(100%)}.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue-deep));color:#fff;box-shadow:0 6px 20px rgba(0,85,165,.35)}
+.btn-primary:hover{box-shadow:0 8px 28px rgba(0,85,165,.45)}
+.btn-outline{background:#fff;color:var(--blue);border:2px solid var(--blue);margin-top:.7rem}.btn-outline:hover{background:var(--blue-light)}
+.btn-success{background:linear-gradient(135deg,#00C853,#009624);color:#fff;box-shadow:0 6px 20px rgba(0,200,83,.3)}
+.modules-grid{display:grid;gap:.9rem;margin-bottom:1.2rem}
+.module-card{display:flex;align-items:center;gap:1rem;padding:1rem 1.2rem;border:2px solid #D0E0F0;border-radius:16px;cursor:pointer;transition:all .25s;background:#fff}
+.module-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,85,165,.15)}
+.module-card.selected{border-color:var(--blue);background:linear-gradient(135deg,#E8F1FA,#F0F7FF);box-shadow:0 0 0 3px rgba(0,85,165,.15)}
+.module-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;background:linear-gradient(135deg,var(--blue-light),#D6E8F8)}
+.module-info h3{font-size:1rem;font-weight:700;color:var(--blue-deep)}.module-info p{font-size:.8rem;color:var(--muted);margin-top:2px}
+.module-check{margin-left:auto;width:24px;height:24px;border:2px solid #C0D4E8;border-radius:50%;transition:all .2s}
+.module-card.selected .module-check{background:var(--blue);border-color:var(--blue);box-shadow:inset 0 0 0 4px #fff}
+.quiz-header{position:fixed;top:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);padding:.7rem 1.2rem;display:flex;align-items:center;gap:.8rem;box-shadow:0 2px 16px rgba(0,61,122,.08);z-index:100;border-bottom:1px solid rgba(0,85,165,.1)}
+.progress-wrap{flex:1;height:10px;background:#D6E4F0;border-radius:99px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-glow));border-radius:99px;transition:width .4s;width:0%;position:relative}
+.progress-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.timer{font-weight:700;color:var(--blue);font-size:.9rem;min-width:48px;text-align:center}.timer.urgent{color:var(--danger);animation:blink .5s infinite}
+@keyframes blink{50%{opacity:.4}}.hearts{display:flex;gap:3px;font-size:1.15rem}.heart.lost{opacity:.2;filter:grayscale(1)}
+.score-badge{background:linear-gradient(135deg,var(--blue-light),#D6E8F8);color:var(--blue-deep);font-weight:700;padding:.3rem .7rem;border-radius:99px;font-size:.85rem}
+.mod-badge{background:var(--blue-deep);color:#fff;font-size:.7rem;font-weight:700;padding:.25rem .55rem;border-radius:8px}
+#quiz-screen{padding-top:4.5rem;justify-content:flex-start}
+.question-card{background:#fff;border-radius:var(--radius);padding:1.6rem;box-shadow:var(--card-shadow);width:100%;max-width:520px;margin-top:1rem;border:1px solid rgba(0,85,165,.08);animation:qIn .4s cubic-bezier(.22,1,.36,1)}
+@keyframes qIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.q-type{font-size:.75rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem}
+.q-text{font-size:1.15rem;font-weight:700;line-height:1.4;margin-bottom:1.3rem}
+.options{display:flex;flex-direction:column;gap:.65rem}
+.option{padding:.95rem 1.1rem;border:2px solid #D0E0F0;border-radius:14px;cursor:pointer;font-weight:600;font-size:.95rem;transition:all .2s;background:#fff;text-align:left}
+.option:hover:not(.disabled){border-color:var(--blue);background:var(--blue-light);transform:translateX(4px)}
+.option.selected{border-color:var(--blue);background:linear-gradient(135deg,#E8F1FA,#F0F7FF);box-shadow:0 0 0 3px rgba(0,85,165,.12)}
+.option.correct{border-color:var(--success);background:#E8F8EF;color:#006B2E;animation:correctPop .4s}.option.wrong{border-color:var(--danger);background:#FFE8EC;color:#B00020;animation:shake .4s}
+@keyframes correctPop{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.option.disabled{pointer-events:none;opacity:.75}
+.feedback{margin-top:1rem;padding:.85rem 1rem;border-radius:12px;font-weight:700;display:none}.feedback.ok{background:#E8F8EF;color:#006B2E;display:block}.feedback.bad{background:#FFE8EC;color:#B00020;display:block}
+.btn-check{margin-top:1rem;display:none}.btn-check.visible{display:block}
+.result-emoji{font-size:4rem;margin-bottom:.4rem;animation:bounceIn .6s}@keyframes bounceIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.result-title{font-size:1.7rem;font-weight:800;color:var(--blue-deep)}
+.result-score{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,var(--blue),var(--blue-deep));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:.4rem 0}
+.xp-bar{background:#D6E4F0;border-radius:99px;height:10px;margin:1rem 0;overflow:hidden;width:100%;max-width:280px}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-glow));border-radius:99px;transition:width 1.2s}
+.result-details{color:var(--muted);margin-bottom:1.2rem;text-align:center;font-size:.95rem}
+.cheat-flag{background:#FFE8EC;color:#B00020;padding:.8rem 1rem;border-radius:12px;font-weight:700;margin-bottom:1rem;text-align:center}
+.admin-panel{width:100%;max-width:720px;background:#fff;border-radius:var(--radius);padding:1.5rem;box-shadow:var(--card-shadow);border:1px solid rgba(0,85,165,.1)}
+.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem}
+.admin-header h2{font-size:1.3rem;color:var(--blue-deep)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem;margin-bottom:1.2rem}
+.stat-card{background:linear-gradient(135deg,var(--blue-light),#F0F7FF);border-radius:14px;padding:1rem;text-align:center;border:1px solid rgba(0,85,165,.1)}
+.stat-card .num{font-size:1.8rem;font-weight:800;color:var(--blue-deep)}.stat-card .lbl{font-size:.75rem;color:var(--muted);margin-top:2px}
+.results-table{width:100%;border-collapse:collapse;font-size:.85rem}.results-table th{background:var(--blue-deep);color:#fff;padding:.6rem .5rem;text-align:left;font-weight:600}
+.results-table th:first-child{border-radius:10px 0 0 0}.results-table th:last-child{border-radius:0 10px 0 0}
+.results-table td{padding:.55rem .5rem;border-bottom:1px solid #E8F0F8}.results-table tr:hover td{background:var(--blue-light)}
+.badge-cheat{background:#FFE8EC;color:#B00020;padding:.15rem .45rem;border-radius:6px;font-size:.7rem;font-weight:700}
+.badge-ok{background:#E8F8EF;color:#006B2E;padding:.15rem .45rem;border-radius:6px;font-size:.7rem;font-weight:700}
+.table-wrap{overflow-x:auto;max-height:360px;overflow-y:auto;border-radius:10px}
+#cheat-overlay{display:none;position:fixed;inset:0;background:rgba(0,30,60,.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:2rem}
+#cheat-overlay h1{font-size:2.2rem;margin-bottom:1rem;color:#FF6B7A}
+footer{margin-top:1.5rem;font-size:.75rem;color:#8AA0B5;text-align:center}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+.hint{font-size:.8rem;color:var(--muted);text-align:center;margin-top:.8rem}
+</style>
 </head>
 <body>
-  <div id="cheat-overlay">
-    <h1>⚠️ Списывание обнаружено!</h1>
-    <p>Вы попытались покинуть тест, переключить вкладку или свернуть окно.<br>
-    Результат аннулирован. Попытка зафиксирована как <strong>СПИСЫВАНИЕ</strong>.</p>
-    <p style="margin-top:1.5rem;font-size:1rem;">Закройте это окно и сообщите преподавателю.</p>
+<div class="bg-anim"></div>
+<div id="cheat-overlay"><h1>⚠️ Списывание обнаружено</h1><p>Вы попытались покинуть тест. Результат аннулирован как <strong>СПИСЫВАНИЕ</strong>.</p></div>
+
+<div id="start-screen" class="screen active">
+  <div class="brand"><div class="brand-logo">А</div><div><div class="brand-text">Алабуга · ОПП</div><div class="brand-sub">Опытное производство поддонов</div></div></div>
+  <h1 class="title">Игровой тест по модулям</h1>
+  <p class="subtitle">Индустрия 4.0 · Робототехника · Экономика · Цифровые системы</p>
+  <div class="card">
+    <label for="student-name">Ваше ФИО</label>
+    <input type="text" id="student-name" placeholder="Иванов Иван Иванович" autocomplete="off" maxlength="80">
+    <label for="student-group">Группа / Курс</label>
+    <input type="text" id="student-group" placeholder="например: ИС-21" autocomplete="off" maxlength="30">
+    <label style="margin-top:.5rem">Выберите модуль(и)</label>
+    <div class="modules-grid" id="modules-grid">
+      <div class="module-card selected" data-mod="1"><div class="module-icon">🤖</div><div class="module-info"><h3>Модуль 1</h3><p>Роботизированное производство</p></div><div class="module-check"></div></div>
+      <div class="module-card selected" data-mod="3"><div class="module-icon">📊</div><div class="module-info"><h3>Модуль 3</h3><p>Экономика производства</p></div><div class="module-check"></div></div>
+      <div class="module-card selected" data-mod="4"><div class="module-icon">💻</div><div class="module-info"><h3>Модуль 4</h3><p>Цифровые системы</p></div><div class="module-check"></div></div>
+    </div>
+    <button class="btn btn-primary" id="btn-start">Начать тест</button>
+    <p class="hint">⏱ 3 жизни · таймер · антисписывание<br>Переключение вкладки = списывание</p>
   </div>
+  <footer>ОЭЗ «Алабуга» · ОПП</footer>
+</div>
 
-  <!-- START -->
-  <div id="start-screen" class="screen active">
-    <div class="logo">🤖</div>
-    <h1 class="title">Опытное производство поддонов</h1>
-    <p class="subtitle">Игровой тест по сокращённым модулям СК<br>Индустрия 4.0 • Робототехника • Экономика • Цифра</p>
-    <div class="card">
-      <label for="student-name">Ваше ФИО</label>
-      <input type="text" id="student-name" placeholder="Иванов Иван Иванович" autocomplete="off" maxlength="80">
-      <label for="student-group">Группа / Курс</label>
-      <input type="text" id="student-group" placeholder="например: ИС-21" autocomplete="off" maxlength="30">
-      <button class="btn btn-green" id="btn-start">Начать тест</button>
-      <p style="margin-top:1rem;font-size:0.85rem;color:var(--muted);text-align:center;">
-        ⏱ ~15–20 минут • 20 вопросов • 3 жизни<br>
-        Переключение вкладок = списывание
-      </p>
-    </div>
-    <footer>Модуль 4 • ОПП</footer>
+<div id="quiz-screen" class="screen">
+  <div class="quiz-header">
+    <span class="mod-badge" id="mod-badge">М1</span>
+    <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
+    <div class="timer" id="timer">00:55</div>
+    <div class="hearts" id="hearts">❤️❤️❤️</div>
+    <div class="score-badge" id="score-display">0 XP</div>
   </div>
-
-  <!-- QUIZ -->
-  <div id="quiz-screen" class="screen">
-    <div class="quiz-header">
-      <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
-      <div class="timer" id="timer">01:00</div>
-      <div class="hearts" id="hearts">❤️❤️❤️</div>
-      <div class="score-badge" id="score-display">0 XP</div>
-    </div>
-    <div class="question-card" id="q-card">
-      <div class="q-type" id="q-type">ВОПРОС</div>
-      <div class="q-text" id="q-text"></div>
-      <div class="options" id="options"></div>
-      <div class="feedback" id="feedback"></div>
-      <button class="btn btn-green btn-check" id="btn-check">Проверить</button>
-      <button class="btn btn-blue btn-check" id="btn-next" style="display:none;">Далее →</button>
-    </div>
+  <div class="question-card" id="q-card">
+    <div class="q-type" id="q-type">ВОПРОС</div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn btn-primary btn-check" id="btn-check">Проверить</button>
+    <button class="btn btn-primary btn-check" id="btn-next" style="display:none">Далее →</button>
   </div>
+</div>
 
-  <!-- RESULT -->
-  <div id="result-screen" class="screen">
-    <div class="result-emoji" id="result-emoji">🎉</div>
-    <div class="result-title" id="result-title">Отлично!</div>
-    <div class="result-score" id="result-score">0 / 20</div>
-    <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
-    <p class="result-details" id="result-details"></p>
-    <div id="cheat-banner" class="cheat-flag" style="display:none;">
-      ⚠️ Зафиксировано списывание. Результат аннулирован.
-    </div>
-    <div class="card" style="max-width:400px;">
-      <button class="btn btn-green" id="btn-download">📥 Скачать результат (Excel)</button>
-      <button class="btn btn-outline" id="btn-restart">Пройти ещё раз</button>
-      <p style="margin-top:1rem;font-size:0.8rem;color:var(--muted);text-align:center;">
-        Файл Excel сохраните в папку Синолоджи Драйв<br>
-        (результаты/ОПП_тесты)
-      </p>
-    </div>
+<div id="result-screen" class="screen">
+  <div class="result-emoji" id="result-emoji">🎉</div>
+  <div class="result-title" id="result-title">Отлично!</div>
+  <div class="result-score" id="result-score">0 / 20</div>
+  <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+  <p class="result-details" id="result-details"></p>
+  <div id="cheat-banner" class="cheat-flag" style="display:none">⚠️ Списывание. Результат аннулирован.</div>
+  <div class="card" style="max-width:400px" id="student-result-actions">
+    <button class="btn btn-primary" id="btn-download-personal">📥 Скачать мой результат</button>
+    <button class="btn btn-outline" id="btn-restart">Пройти ещё раз</button>
+    <p class="hint">Полная статистика — только у администратора.</p>
   </div>
+</div>
 
-  <canvas id="confetti"></canvas>
+<div id="admin-screen" class="screen">
+  <div class="brand"><div class="brand-logo">А</div><div><div class="brand-text">Админ-панель</div><div class="brand-sub">Лукьянчиков Е.И. · ОПП</div></div></div>
+  <div class="admin-panel">
+    <div class="admin-header">
+      <h2>Статистика прохождений</h2>
+      <button class="btn btn-success" id="btn-export-all" style="width:auto;padding:.6rem 1.2rem;font-size:.85rem">📊 Excel всех результатов</button>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="table-wrap">
+      <table class="results-table">
+        <thead><tr><th>Дата</th><th>ФИО</th><th>Группа</th><th>Модули</th><th>%</th><th>XP</th><th>Статус</th></tr></thead>
+        <tbody id="results-tbody"></tbody>
+      </table>
+    </div>
+    <p class="hint" style="margin-top:.8rem">Google Drive: <a href="https://drive.google.com/drive/folders/1YtCsu7_C-FwszX-Sq6G4R1f0OJ6O1d7l" target="_blank" style="color:var(--blue)">ОПП_результаты_тестов</a></p>
+    <button class="btn btn-outline" id="btn-admin-back" style="margin-top:.8rem">← На главную</button>
+  </div>
+</div>
 
-  <script src="questions.js"></script>
-  <script src="app.js"></script>
+<canvas id="confetti"></canvas>
+<script src="questions.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
